@@ -56,4 +56,4 @@ async def check_weekly_tasks():
 
 client.loop.create_task(check_weekly_tasks())
 
-client.run('MTIyNzI5MTEwNTQwNjc1MDc4MA.GZMxfq.-FCpCI3dQXEZ3z3M2bmjH1i5SsVOJhYPTVqzDk')  #bot's token
+client.run('MTIyNzI5MTEwNTQwNjc1MDc4MA.GV86xK.SqajPv5L-mGIuzvJNu4LMh8rmCQ7vO5b5blFMc')  #bot's token
