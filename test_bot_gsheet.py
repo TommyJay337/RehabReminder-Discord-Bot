@@ -85,7 +85,7 @@ async def on_message(message):
 
     if message.content.startswith('$hello'):
         # Manually specify the week number here for testing
-        tasks_message = get_current_week_tasks(week_number=4)  # Change 3 to your test week number
+        tasks_message = get_current_week_tasks(week_number=5)  # Change 3 to your test week number
         await message.channel.send(tasks_message)
 
 client.run(os.getenv('TOKEN'))
