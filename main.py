@@ -26,6 +26,9 @@ class MyBot(commands.Bot):
 
     async def check_weekly_tasks_manual(self):
         channel = self.get_channel(1227352261928292392)
+        if channel is None:
+            print("Channel not found.")
+            return
         # Your existing task logic, modified for immediate execution or manual testing
         today = datetime.now()
         # Assume it's always "time to send" for testing
@@ -43,6 +46,7 @@ class MyBot(commands.Bot):
 
 # Instantiate MyBot with command prefix
 intents = discord.Intents.default()
+intents.message_content = True
 bot = MyBot(command_prefix="!", intents=intents)
 
 @bot.command(name="testtasks")
@@ -53,3 +57,7 @@ with open('discord_token.txt', 'r') as file:
     token = file.read().strip()
 
 bot.run(token)
+
+@bot.event
+async def on_command_error(ctx, error):
+    await ctx.send(f"An error occurred: {str(error)}")
