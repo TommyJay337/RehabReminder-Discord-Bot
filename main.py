@@ -68,24 +68,20 @@ def get_current_week_tasks(week_number=None):
         
     return message
 
-def next_or_test_friday_reminder():
-    now = datetime.now(timezone.utc)  # Use timezone-aware datetime object
+def next_friday_at_9am_cst():
+    now = datetime.now(timezone.utc)  # Get the current UTC time
+    # CST is UTC-6
+    target_hour_utc = 15  # 9 AM CST in UTC (9 + 6 = 15)
 
-    # Testing Condition
-    if now.weekday() == 3:  # Thursday for testing
-        test_time_today = now.replace(hour=17, minute=43, second=0, microsecond=0)
-        if now < test_time_today:
-            return test_time_today
-
-    # Regular schedule: Calculate how many days until next Friday
-    days_until_friday = (4 - now.weekday() + 7) % 7  # Friday is day 4
-    if days_until_friday == 0 and now.hour >= 15 and now.minute >= 0:
+    # Calculate how many days until next Friday (4 in Python's datetime module, where Monday is 0)
+    days_until_friday = (4 - now.weekday() + 7) % 7
+    if days_until_friday == 0 and now.hour >= target_hour_utc:
+        # If today is Friday and it's past 9 AM CST in UTC, set for next Friday
         days_until_friday = 7
 
-    next_friday = now + timedelta(days=days_until_friday)
-    next_friday_at_9_00_am_cst = next_friday.replace(hour=15, minute=0, second=0, microsecond=0)
-    return next_friday_at_9_00_am_cst
-
+    # Calculate the datetime for the next Friday at 9:00 AM CST in UTC
+    next_friday = (now + timedelta(days=days_until_friday)).replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
+    return next_friday
 
 async def weekly_task():
     await client.wait_until_ready()
@@ -94,7 +90,7 @@ async def weekly_task():
     print(f"Channel found: {channel}")
 
     while not client.is_closed():
-        next_run = next_or_test_friday_reminder()
+        next_run = next_friday_at_9am_cst()
         now = datetime.now(timezone.utc)
         wait_time_in_seconds = (next_run - now).total_seconds()
 
@@ -109,7 +105,6 @@ async def weekly_task():
                 print("Message sent successfully.")
             except Exception as e:
                 print(f"Failed to send message: {e}")
-
 
 @client.event
 async def on_ready():
