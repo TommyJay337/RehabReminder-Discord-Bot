@@ -1,3 +1,4 @@
+'''
 from dotenv import load_dotenv
 import discord
 import os
@@ -89,3 +90,4 @@ async def on_message(message):
         await message.channel.send(tasks_message)
 
 client.run(os.getenv('TOKEN'))
+'''
