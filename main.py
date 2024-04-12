@@ -90,7 +90,7 @@ def next_sunday_at_10am_cst():
 
 async def weekly_task():
     await client.wait_until_ready()
-    channel_id = 1227352261928292395  # Ensure this is the correct channel ID
+    channel_id = 1227352261928292395  # Channel ID number
     channel = client.get_channel(channel_id)
     print(f"Channel found: {channel}")
 
@@ -98,8 +98,13 @@ async def weekly_task():
         next_run = next_sunday_at_10am_cst()
         now = datetime.now(timezone.utc)
         wait_time_in_seconds = (next_run - now).total_seconds()
+        wait_time_in_minutes = wait_time_in_seconds / 60
+        wait_time_in_hours = wait_time_in_minutes / 60
 
-        print(f"Waiting for {wait_time_in_seconds} seconds for the next trigger.")
+        # Using divmod to separate days and remaining hours
+        wait_time_in_days, remaining_hours = divmod(wait_time_in_hours, 24)
+
+        print(f"Waiting for {int(wait_time_in_days)} days and {int(remaining_hours)} hours for the next trigger.")
         await asyncio.sleep(wait_time_in_seconds)
 
         if channel:
@@ -133,7 +138,6 @@ async def on_message(message):
 
 # Manual testing portion of the code
     if message.content.startswith('$test'):
-        # Manually specify the week number here for testing
         tasks_message = get_current_week_tasks(week_number=1)  # Change to your test week number
         await message.channel.send(tasks_message)
 
