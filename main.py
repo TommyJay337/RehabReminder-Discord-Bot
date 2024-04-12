@@ -68,20 +68,20 @@ def get_current_week_tasks(week_number=None):
         
     return message
 
-def next_friday_at_9am_cst():
+def next_sunday_at_10am_cst():
     now = datetime.now(timezone.utc)  # Get the current UTC time
     # CST is UTC-6
-    target_hour_utc = 15  # 9 AM CST in UTC (9 + 6 = 15)
+    target_hour_utc = 16  # 10 AM CST in UTC (10 + 6 = 16)
 
-    # Calculate how many days until next Friday (4 in Python's datetime module, where Monday is 0)
-    days_until_friday = (4 - now.weekday() + 7) % 7
-    if days_until_friday == 0 and now.hour >= target_hour_utc:
-        # If today is Friday and it's past 9 AM CST in UTC, set for next Friday
-        days_until_friday = 7
+    # Calculate how many days until next Sunday (6 in Python's datetime module, where Monday is 0)
+    days_until_sunday = (6 - now.weekday() + 7) % 7
+    if days_until_sunday == 0 and now.hour >= target_hour_utc:
+        # If today is Sunday and it's past 10 AM CST in UTC, set for next Sunday
+        days_until_sunday = 7
 
-    # Calculate the datetime for the next Friday at 9:00 AM CST in UTC
-    next_friday = (now + timedelta(days=days_until_friday)).replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
-    return next_friday
+    # Calculate the datetime for the next Sunday at 10:00 AM CST in UTC
+    next_sunday = (now + timedelta(days=days_until_sunday)).replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
+    return next_sunday
 
 async def weekly_task():
     await client.wait_until_ready()
@@ -90,7 +90,7 @@ async def weekly_task():
     print(f"Channel found: {channel}")
 
     while not client.is_closed():
-        next_run = next_friday_at_9am_cst()
+        next_run = next_sunday_at_10am_cst()
         now = datetime.now(timezone.utc)
         wait_time_in_seconds = (next_run - now).total_seconds()
 
