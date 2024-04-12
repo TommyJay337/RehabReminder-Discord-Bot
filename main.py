@@ -70,18 +70,23 @@ def get_current_week_tasks(week_number=None):
 
 def next_sunday_at_10am_cst():
     now = datetime.now(timezone.utc)  # Get the current UTC time
-    # CST is UTC-6
-    target_hour_utc = 16  # 10 AM CST in UTC (10 + 6 = 16)
+    target_hour_utc = 16  # 10 AM CST in UTC (10 + 6 = 16 during Standard Time)
 
-    # Calculate how many days until next Sunday (6 in Python's datetime module, where Monday is 0)
+    # Calculate how many days until next Sunday
     days_until_sunday = (6 - now.weekday() + 7) % 7
-    if days_until_sunday == 0 and now.hour >= target_hour_utc:
-        # If today is Sunday and it's past 10 AM CST in UTC, set for next Sunday
-        days_until_sunday = 7
+    if days_until_sunday == 0:
+        # If today is Sunday, determine if it's before or after 10 AM CST
+        if now.hour > target_hour_utc or (now.hour == target_hour_utc and now.minute > 0):
+            days_until_sunday = 7  # Set for next Sunday if it's past 10 AM
 
-    # Calculate the datetime for the next Sunday at 10:00 AM CST in UTC
-    next_sunday = (now + timedelta(days=days_until_sunday)).replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
-    return next_sunday
+    next_sunday = now + timedelta(days=days_until_sunday)
+    next_sunday_at_10am = next_sunday.replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
+
+    # Check if we need to add an hour to account for Daylight Saving Time
+    if next_sunday_at_10am.hour < target_hour_utc:
+        next_sunday_at_10am += timedelta(hours=1)
+
+    return next_sunday_at_10am
 
 async def weekly_task():
     await client.wait_until_ready()
