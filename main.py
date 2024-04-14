@@ -54,23 +54,23 @@ def get_current_week_tasks(week_number=None):
 
     # Format the tasks into a message string
     if tasks_for_week:
-        message = "Assignments/Tests for the current week of the module:\n"
+        message = "Assignments/Tests for the upcoming week of the module:\n"
         for task in tasks_for_week:
             message += f"- {task.get('Tasks')} (Due: {task.get('Due Date')})\n"
 
         if weeks_remaining > 0:
-            message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+            message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
         else: message += f"\nYou're almost there! This is the last week"
 
     else:
         message = "No assignments/tests found for the current week of the module. If this is a mistake, please let Thomas know."
-        message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+        message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
         
     return message
 
 def next_sunday_at_10am_cst():
     now = datetime.now(timezone.utc)  # Get the current UTC time
-    target_hour_utc = 16  # 10 AM CST in UTC (10 + 6 = 16 during Standard Time)
+    target_hour_utc = 17  # 10 AM CST in UTC (10 + 6 = 16 during Standard Time)
 
     # Calculate how many days until next Sunday
     days_until_sunday = (6 - now.weekday() + 7) % 7
@@ -90,31 +90,36 @@ def next_sunday_at_10am_cst():
 
 async def weekly_task():
     await client.wait_until_ready()
-    channel_id = 1227352261928292395  # Channel ID number
+    channel_id = 1227352261928292395  #  channel ID
     channel = client.get_channel(channel_id)
     print(f"Channel found: {channel}")
 
     while not client.is_closed():
+        # Calculate when next to run right before the sleep to ensure accuracy
         next_run = next_sunday_at_10am_cst()
         now = datetime.now(timezone.utc)
         wait_time_in_seconds = (next_run - now).total_seconds()
-        wait_time_in_minutes = wait_time_in_seconds / 60
-        wait_time_in_hours = wait_time_in_minutes / 60
 
-        # Using divmod to separate days and remaining hours
-        wait_time_in_days, remaining_hours = divmod(wait_time_in_hours, 24)
-
-        print(f"Waiting for {int(wait_time_in_days)} days and {int(remaining_hours)} hours for the next trigger.")
+        print(f"Waiting for {wait_time_in_seconds} seconds for the next trigger.")
         await asyncio.sleep(wait_time_in_seconds)
 
-        if channel:
+        # Recalculate 'now' after waking up to ensure we are still on schedule
+        now = datetime.now(timezone.utc)
+        if now >= next_run:  # Only attempt to send the message if the current time is on or past the scheduled time
             print("Attempting to send message")
-            tasks_message = get_current_week_tasks()
+            tasks_message = get_current_week_tasks(week_number=get_semester_week_number() + 1)  # Get tasks for the upcoming week
             try:
                 await channel.send(tasks_message)
                 print("Message sent successfully.")
             except Exception as e:
                 print(f"Failed to send message: {e}")
+
+            # Immediately calculate and wait again for the next run to avoid multiple messages
+            next_run = next_sunday_at_10am_cst()
+            wait_time_in_seconds = (next_run - datetime.now(timezone.utc)).total_seconds()
+            print(f"Re-waiting for {wait_time_in_seconds} seconds for the next trigger.")
+            await asyncio.sleep(wait_time_in_seconds)
+
 
 @client.event
 async def on_ready():
@@ -138,7 +143,7 @@ async def on_message(message):
 
 # Manual testing portion of the code
     if message.content.startswith('$test'):
-        tasks_message = get_current_week_tasks(week_number=1)  # Change to your test week number
+        tasks_message = get_current_week_tasks(week_number=2)  # Change to your test week number
         await message.channel.send(tasks_message)
 
 
