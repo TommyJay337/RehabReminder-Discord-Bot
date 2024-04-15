@@ -68,44 +68,55 @@ def get_current_week_tasks(week_number=None):
         
     return message
 
-def next_sunday_at_10am_cst():
-    now = datetime.now(timezone.utc)  # Get the current UTC time
-    target_hour_utc = 17  # 10 AM CST in UTC (10 + 6 = 16 during Standard Time)
+def next_sunday_at_8pm_cst():
+    now = datetime.now(timezone.utc)  # Current UTC time
+    print(f"Current UTC time: {now.isoformat()}")
 
-    # Calculate how many days until next Sunday
-    days_until_sunday = (6 - now.weekday() + 7) % 7
-    if days_until_sunday == 0:
-        # If today is Sunday, determine if it's before or after 10 AM CST
-        if now.hour > target_hour_utc or (now.hour == target_hour_utc and now.minute > 0):
-            days_until_sunday = 7  # Set for next Sunday if it's past 10 AM
+    # Convert current UTC time to CST (UTC-6)
+    cst_now = now - timedelta(hours=6)
+    print(f"Current CST time: {cst_now.isoformat()}")
 
-    next_sunday = now + timedelta(days=days_until_sunday)
-    next_sunday_at_10am = next_sunday.replace(hour=target_hour_utc, minute=0, second=0, microsecond=0)
+    # Define the target hour in CST
+    target_hour_cst = 20  # 8 PM CST
 
-    # Check if we need to add an hour to account for Daylight Saving Time
-    if next_sunday_at_10am.hour < target_hour_utc:
-        next_sunday_at_10am += timedelta(hours=1)
+    # Calculate days until next Sunday (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+    days_until_sunday = (6 - cst_now.weekday()) % 7
+    print(f"Days until next Sunday: {days_until_sunday}")
 
-    return next_sunday_at_10am
+    # If today is Sunday and before 8 PM CST, set the target for today
+    if days_until_sunday == 0 and cst_now.hour < target_hour_cst:
+        next_run_cst = cst_now.replace(hour=target_hour_cst, minute=0, second=0, microsecond=0)
+    else:
+        # Calculate next Sunday's date
+        next_sunday = cst_now + timedelta(days=days_until_sunday)
+        next_run_cst = next_sunday.replace(hour=target_hour_cst, minute=0, second=0, microsecond=0)
+
+    # Convert the next run time back to UTC
+    next_run_utc = next_run_cst + timedelta(hours=6)
+    print(f"Next run scheduled for (CST): {next_run_cst.isoformat()}")
+    print(f"Next run scheduled for (UTC): {next_run_utc.isoformat()}")
+
+    return next_run_utc
 
 async def weekly_task():
     await client.wait_until_ready()
-    channel_id = 1227352261928292395  #  channel ID
+    channel_id = 1227352261928292395  # channel ID
     channel = client.get_channel(channel_id)
     print(f"Channel found: {channel}")
 
+    next_run = next_sunday_at_8pm_cst()
+    print(f"Initial next run scheduled for {next_run.isoformat()}")
+
     while not client.is_closed():
-        # Calculate when next to run right before the sleep to ensure accuracy
-        next_run = next_sunday_at_10am_cst()
         now = datetime.now(timezone.utc)
         wait_time_in_seconds = (next_run - now).total_seconds()
 
-        print(f"Waiting for {wait_time_in_seconds} seconds for the next trigger.")
-        await asyncio.sleep(wait_time_in_seconds)
+        if wait_time_in_seconds > 0:
+            print(f"Waiting for {wait_time_in_seconds} seconds for the next trigger.")
+            await asyncio.sleep(wait_time_in_seconds)
 
-        # Recalculate 'now' after waking up to ensure we are still on schedule
-        now = datetime.now(timezone.utc)
-        if now >= next_run:  # Only attempt to send the message if the current time is on or past the scheduled time
+        now = datetime.now(timezone.utc)  # Re-check current time after sleep
+        if now >= next_run:
             print("Attempting to send message")
             tasks_message = get_current_week_tasks(week_number=get_semester_week_number() + 1)  # Get tasks for the upcoming week
             try:
@@ -114,12 +125,8 @@ async def weekly_task():
             except Exception as e:
                 print(f"Failed to send message: {e}")
 
-            # Immediately calculate and wait again for the next run to avoid multiple messages
-            next_run = next_sunday_at_10am_cst()
-            wait_time_in_seconds = (next_run - datetime.now(timezone.utc)).total_seconds()
-            print(f"Re-waiting for {wait_time_in_seconds} seconds for the next trigger.")
-            await asyncio.sleep(wait_time_in_seconds)
-
+        next_run = next_sunday_at_8pm_cst()  # Recalculate the next run time after attempting to send the message
+        print(f"Next run rescheduled for {next_run.isoformat()}")
 
 @client.event
 async def on_ready():
