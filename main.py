@@ -30,45 +30,38 @@ def get_semester_week_number():
     # Calculate the difference between the current date and the start date of the semester
     delta = current_date - semester_start_date
     # Calculate the week number; +1 to start the week count at 1
-    week_number = (delta.days // 7) + 1
+    week_number = (delta.days // 7)
     return week_number
 
 total_weeks_in_semester = 10
 
 def get_current_week_tasks(week_number=None):
     if week_number is None:
-        # If no week_number is provided, calculate it based on the semester start date
         week_number = get_semester_week_number()
 
+    print(f"Fetching tasks for Week #: {week_number}")
     weeks_remaining = total_weeks_in_semester - week_number
 
-    print(f"Searching for tasks in Week #: {week_number}")  # Debug print
-
-    # Open the spreadsheet
-    sheet = gsheet_client.open("Mod 8 Tasks").get_worksheet(0)  # Assuming you're using the first sheet
-    # Get all records from the sheet
+    # Access the sheet and fetch tasks as before
+    sheet = gsheet_client.open("Mod 8 Tasks").get_worksheet(0)
     records = sheet.get_all_records()
-
-    # Filter tasks that match the given week number
     tasks_for_week = [record for record in records if record.get('Week #') == week_number]
 
-    # Format the tasks into a message string
     if tasks_for_week:
         message = "Assignments/Tests for the upcoming week of the module:\n"
         for task in tasks_for_week:
             message += f"- {task.get('Tasks')} (Due: {task.get('Due Date')})\n"
-
         if weeks_remaining > 0:
-            message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
-        else: message += f"\nYou're almost there! This is the last week"
-
+            message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+        else:
+            message += "\nYou're almost there! This is the last week"
     else:
         message = "No assignments/tests found for the current week of the module. If this is a mistake, please let Thomas know."
-        message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
-        
+        message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+    
     return message
 
-def next_sunday_at_8pm_cst():
+def next_sunday_at_1030am_cst():
     now = datetime.now(timezone.utc)  # Current UTC time
     print(f"Current UTC time: {now.isoformat()}")
 
@@ -77,19 +70,23 @@ def next_sunday_at_8pm_cst():
     print(f"Current CST time: {cst_now.isoformat()}")
 
     # Define the target hour in CST
-    target_hour_cst = 20  # 8 PM CST
+    target_hour_cst = 10  # 10 AM CST
+    target_minute_cst = 30  # 10:30 AM CST
 
     # Calculate days until next Sunday (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     days_until_sunday = (6 - cst_now.weekday()) % 7
     print(f"Days until next Sunday: {days_until_sunday}")
 
-    # If today is Sunday and before 8 PM CST, set the target for today
-    if days_until_sunday == 0 and cst_now.hour < target_hour_cst:
-        next_run_cst = cst_now.replace(hour=target_hour_cst, minute=0, second=0, microsecond=0)
+    # Calculate the next trigger time
+    if days_until_sunday == 0 and (cst_now.hour < target_hour_cst or (cst_now.hour == target_hour_cst and cst_now.minute < target_minute_cst)):
+        # It's Sunday and before 8:30 PM CST
+        next_run_cst = cst_now.replace(hour=target_hour_cst, minute=target_minute_cst, second=0, microsecond=0)
     else:
-        # Calculate next Sunday's date
+        # It's not the right time yet, calculate the next appropriate Sunday
+        if days_until_sunday == 0:
+            days_until_sunday = 7  # It's already past the time on Sunday, wait for the next Sunday
         next_sunday = cst_now + timedelta(days=days_until_sunday)
-        next_run_cst = next_sunday.replace(hour=target_hour_cst, minute=0, second=0, microsecond=0)
+        next_run_cst = next_sunday.replace(hour=target_hour_cst, minute=target_minute_cst, second=0, microsecond=0, day=next_sunday.day)
 
     # Convert the next run time back to UTC
     next_run_utc = next_run_cst + timedelta(hours=6)
@@ -98,13 +95,14 @@ def next_sunday_at_8pm_cst():
 
     return next_run_utc
 
+
 async def weekly_task():
     await client.wait_until_ready()
     channel_id = 1227352261928292395  # channel ID
     channel = client.get_channel(channel_id)
     print(f"Channel found: {channel}")
 
-    next_run = next_sunday_at_8pm_cst()
+    next_run = next_sunday_at_1030am_cst()
     print(f"Initial next run scheduled for {next_run.isoformat()}")
 
     while not client.is_closed():
@@ -124,9 +122,12 @@ async def weekly_task():
                 print("Message sent successfully.")
             except Exception as e:
                 print(f"Failed to send message: {e}")
-
-        next_run = next_sunday_at_8pm_cst()  # Recalculate the next run time after attempting to send the message
-        print(f"Next run rescheduled for {next_run.isoformat()}")
+            
+            # Ensure the next run is well in the future
+            while datetime.now(timezone.utc) >= next_run:
+                next_run = next_sunday_at_1030am_cst()
+            
+            print(f"Next run rescheduled for {next_run.isoformat()}")
 
 @client.event
 async def on_ready():
