@@ -70,11 +70,11 @@ def next_sunday_at_1030am_cst():
     print(f"Current CST time: {cst_now.isoformat()}")
 
     # Define the target hour in CST
-    target_hour_cst = 9  # 10 AM CST
-    target_minute_cst = 51  # 10:30 AM CST
+    target_hour_cst = 10  # 10 AM CST
+    target_minute_cst = 30  # 10:30 AM CST
 
     # Calculate days until next Sunday (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-    days_until_sunday = 0 #(6 - cst_now.weekday()) % 7
+    days_until_sunday = (6 - cst_now.weekday()) % 7 # manually set to 0 to test today
     print(f"Days until next Sunday: {days_until_sunday}")
 
     # Calculate the next trigger time
