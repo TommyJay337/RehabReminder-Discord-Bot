@@ -52,12 +52,12 @@ def get_current_week_tasks(week_number=None):
         for task in tasks_for_week:
             message += f"- {task.get('Tasks')} (Due: {task.get('Due Date')})\n"
         if weeks_remaining > 0:
-            message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+            message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
         else:
             message += "\nYou're almost there! This is the last week"
     else:
         message = "No assignments/tests found for the current week of the module. If this is a mistake, please let Thomas know."
-        message += f"\nYou're crushing it! Only {weeks_remaining} weeks left to go!"
+        message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
     
     return message
 
@@ -70,11 +70,11 @@ def next_sunday_at_1030am_cst():
     print(f"Current CST time: {cst_now.isoformat()}")
 
     # Define the target hour in CST
-    target_hour_cst = 10  # 10 AM CST
-    target_minute_cst = 30  # 10:30 AM CST
+    target_hour_cst = 9  # 10 AM CST
+    target_minute_cst = 51  # 10:30 AM CST
 
     # Calculate days until next Sunday (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-    days_until_sunday = (6 - cst_now.weekday()) % 7
+    days_until_sunday = 0 #(6 - cst_now.weekday()) % 7
     print(f"Days until next Sunday: {days_until_sunday}")
 
     # Calculate the next trigger time
