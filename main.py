@@ -98,7 +98,7 @@ def next_sunday_at_1030am_cst():
 
 async def weekly_task():
     await client.wait_until_ready()
-    channel_id = 1227352261928292395  # channel ID
+    channel_id = 1229817525676539994  # channel ID
     channel = client.get_channel(channel_id)
     print(f"Channel found: {channel}")
 
