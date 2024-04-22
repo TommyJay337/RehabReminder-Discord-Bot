@@ -22,7 +22,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_name('discord-bot-data-41981
 gsheet_client = gspread.authorize(creds)
 
 # Assuming semester start date (YYYY, M, D)
-semester_start_date = datetime(2024, 4, 8)
+semester_start_date = datetime(2024, 4, 7)
 
 def get_semester_week_number():
     # Current date
@@ -56,7 +56,7 @@ def get_current_week_tasks(week_number=None):
         else:
             message += "\nYou're almost there! This is the last week"
     else:
-        message = "No assignments/tests found for the current week of the module. If this is a mistake, please let Thomas know."
+        message = "No assignments/tests found for this next week of the module. If this is a mistake, please let Thomas know."
         message += f"\nYou're crushing it! Only {weeks_remaining + 1} weeks left to go!"
     
     return message
@@ -151,7 +151,7 @@ async def on_message(message):
 
 # Manual testing portion of the code
     if message.content.startswith('$test'):
-        tasks_message = get_current_week_tasks(week_number=2)  # Change to your test week number
+        tasks_message = get_current_week_tasks(week_number=3)  # Change to your test week number
         await message.channel.send(tasks_message)
 
 
