@@ -150,8 +150,8 @@ async def on_message(message):
 
 
 # Manual testing portion of the code
-    if message.content.startswith('$test'):
-        tasks_message = get_current_week_tasks(week_number=3)  # Change to your test week number
+    if message.content.startswith('$remindMe'):
+        tasks_message = get_current_week_tasks(week_number=7)  # Change to your test week number
         await message.channel.send(tasks_message)
 
 
